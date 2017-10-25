@@ -48,7 +48,6 @@ class ExtractFilesTask(luigi.Task):
     def run(self):
         for filename in os.listdir(self.scraped_path):
             if filename.endswith('.csv.gz'):
-                print (filename)
                 file = gzip.open(os.path.join(self.scraped_path,filename))
                 file_contents = file.read()
                 extracted_file = open(os.path.join(self.extracted_path,filename[:-3]),"wb")
@@ -67,9 +66,23 @@ class ExtractFilesTask(luigi.Task):
 class CreateCombinedDetailsTask(luigi.Task):
     id = luigi.Parameter(default=0)
     extracted_path = "results/extracted/"
+    combined_path = "results/combined.csv"
 
     def run(self):
-        pass
+        for filename in os.listdir(self.extracted_path):
+            print (filename)
+            if filename.endswith('.csv'):
+                extracted_file = open(os.path.join(self.extracted_path,filename),"r")
+                combined_file = open("results/combined.csv", "a+")
+
+                if os.path.getsize("results/combined.csv") > 0:
+                    # file is not empty, skip header row
+                    extracted_file.readline()
+
+                extracted_file_contents = extracted_file.read()
+                combined_file.write(extracted_file_contents)
+                return
+
 
     def requires(self):
         return [
@@ -88,7 +101,7 @@ class NOAATask(luigi.Task):
 
     def requires(self):
         return [
-            ExtractFilesTask()
+            CreateCombinedDetailsTask()
         ]
 
     def output(self):
