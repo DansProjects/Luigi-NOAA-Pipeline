@@ -3,7 +3,7 @@ import os, re
 import gzip
 from urllib.parse import urljoin
 from urllib.request import urlopen
-from bs4 import BeautifulSoup as soup
+from bs4 import BeautifulSoup as Soup
 
 
 class ScrapeEventDetailsTask(luigi.Task):
@@ -12,22 +12,21 @@ class ScrapeEventDetailsTask(luigi.Task):
 
     def run(self):
 
-        return
         noaa_repo = urlopen(self.url)
         noaa_html = noaa_repo.read().decode('utf-8')
 
-        bs = soup(noaa_html)
+        bs = Soup(noaa_html, 'html.parser')
         links = bs.findAll('a')
 
         for link in links:
             if link['href'].endswith('.csv.gz') and link['href'].startswith("StormEvents_details"):
                 content = urlopen(urljoin(self.url, link['href']))
                 file_name = link.contents[0]
-                file = open("results/scraped/{}".format(file_name),"b+w")
+                file = open("results/scraped/{}".format(file_name), "b+w")
                 file.write(content.read())
                 file.close()
 
-        file = open("results/scrape_complete_{}.txt".format(self.id),"w")
+        file = open("results/scrape_complete_{}.txt".format(self.id), "w")
         file.write("DONE!")
         file.close()
 
@@ -50,12 +49,12 @@ class ExtractFilesTask(luigi.Task):
             if filename.endswith('.csv.gz'):
                 file = gzip.open(os.path.join(self.scraped_path,filename))
                 file_contents = file.read()
-                extracted_file = open(os.path.join(self.extracted_path,filename[:-3]),"wb")
+                extracted_file = open(os.path.join(self.extracted_path,filename[:-3]), "wb")
                 extracted_file.write(file_contents)
                 extracted_file.close()
                 file.close()
 
-        done_file = open("results/extract_complete_{}.txt".format(self.id),"w")
+        done_file = open("results/extract_complete_{}.txt".format(self.id), "w")
         done_file.write("DONE!")
         done_file.close()
 
@@ -70,19 +69,18 @@ class CreateCombinedDetailsTask(luigi.Task):
 
     def run(self):
         for filename in os.listdir(self.extracted_path):
-            print (filename)
+            print(filename)
             if filename.endswith('.csv'):
-                extracted_file = open(os.path.join(self.extracted_path,filename),"r")
-                combined_file = open("results/combined.csv", "a+")
+                extracted_file = open(os.path.join(self.extracted_path,filename), "r")
+                combined_file = open("results/combined_{}.csv".format(self.id), "a+")
 
-                if os.path.getsize("results/combined.csv") > 0:
+                if os.path.getsize("results/combined_{}.csv".format(self.id)) > 0:
                     # file is not empty, skip header row
                     extracted_file.readline()
 
                 extracted_file_contents = extracted_file.read()
                 combined_file.write(extracted_file_contents)
-                return
-
+                # return
 
     def requires(self):
         return [
