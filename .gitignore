@@ -3,3 +3,4 @@ extract_complete*
 scrape_complete*
 combined*
 .ipynb_checkpoints/
+.DS_Store
