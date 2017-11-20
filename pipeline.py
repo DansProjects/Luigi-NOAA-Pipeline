@@ -67,7 +67,7 @@ class CreateCombinedDetailsTask(luigi.Task):
     id = luigi.Parameter(default=0)
     url = luigi.Parameter()
     extracted_path = "results/extracted/"
-    combined_path = "results/combined.csv"
+    combined_path = "results/combined_{}.csv".format(id)
 
     def run(self):
 
@@ -75,15 +75,14 @@ class CreateCombinedDetailsTask(luigi.Task):
 
             if filename.endswith('.csv'):
                 extracted_file = open(os.path.join(self.extracted_path,filename), "r")
-                combined_file = open("results/combined_{}.csv".format(self.id), "a+")
+                combined_file = open(self.combined_path, "a+")
 
-                if os.path.getsize("results/combined_{}.csv".format(self.id)) > 0:
+                if os.path.getsize(self.combined_path) > 0:
                     # file is not empty, skip header row
                     extracted_file.readline()
 
                 extracted_file_contents = extracted_file.read()
                 combined_file.write(extracted_file_contents)
-                # return
 
     def requires(self):
         return [

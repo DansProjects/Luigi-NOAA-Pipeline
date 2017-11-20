@@ -14,8 +14,17 @@ Data source:  https://www1.ncdc.noaa.gov/pub/data/swdi/stormevents/csvfiles/
 
 #### Usage
 
+Download this code and go to this directory. 
+
+##### With Docker
 ```
-docker build -t luigi-noaa
+docker build -t luigi-noaa .
 docker run -ti luigi-noaa
+python3 pipeline.py
+```
+
+##### Without Docker
+```
+pip3 install -r requirements.txt
 python3 pipeline.py
 ```
