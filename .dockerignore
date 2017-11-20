@@ -1,0 +1,6 @@
+results/extracted/Storm*
+results/scraped/Storm*
+.idea/
+results/extract_complete*
+results/scrape_complete*
+results/combined.csv
