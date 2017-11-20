@@ -1,5 +1,5 @@
 import luigi
-import os, re
+import os
 import gzip
 from urllib.parse import urljoin
 from urllib.request import urlopen
@@ -12,11 +12,10 @@ class ScrapeEventDetailsTask(luigi.Task):
 
     def run(self):
 
-        return
         noaa_repo = urlopen(self.url)
         noaa_html = noaa_repo.read().decode('utf-8')
 
-        bs = soup(noaa_html)
+        bs = soup(noaa_html, "html.parser")
         links = bs.findAll('a')
 
         for link in links:
@@ -66,16 +65,16 @@ class ExtractFilesTask(luigi.Task):
 class CreateCombinedDetailsTask(luigi.Task):
     id = luigi.Parameter(default=0)
     extracted_path = "results/extracted/"
-    combined_path = "results/combined.csv"
+    combined_path = "results/combined_{}.csv".format(id)
 
     def run(self):
         for filename in os.listdir(self.extracted_path):
             print (filename)
             if filename.endswith('.csv'):
                 extracted_file = open(os.path.join(self.extracted_path,filename),"r")
-                combined_file = open("results/combined.csv", "a+")
+                combined_file = open("results/combined_{}.csv".format(self.id), "a+")
 
-                if os.path.getsize("results/combined.csv") > 0:
+                if os.path.getsize("results/combined_{}.csv".format(self.id)) > 0:
                     # file is not empty, skip header row
                     extracted_file.readline()
 
