@@ -3,30 +3,30 @@ import os
 import gzip
 from urllib.parse import urljoin
 from urllib.request import urlopen
-from bs4 import BeautifulSoup as soup
+from bs4 import BeautifulSoup as Soup
 
 
 class ScrapeEventDetailsTask(luigi.Task):
     id = luigi.Parameter(default=0)
-    url = "https://www1.ncdc.noaa.gov/pub/data/swdi/stormevents/csvfiles/"
+    url = luigi.Parameter()
 
     def run(self):
 
         noaa_repo = urlopen(self.url)
         noaa_html = noaa_repo.read().decode('utf-8')
 
-        bs = soup(noaa_html, "html.parser")
+        bs = Soup(noaa_html, 'html.parser')
         links = bs.findAll('a')
 
         for link in links:
             if link['href'].endswith('.csv.gz') and link['href'].startswith("StormEvents_details"):
                 content = urlopen(urljoin(self.url, link['href']))
                 file_name = link.contents[0]
-                file = open("results/scraped/{}".format(file_name),"b+w")
+                file = open("results/scraped/{}".format(file_name), "b+w")
                 file.write(content.read())
                 file.close()
 
-        file = open("results/scrape_complete_{}.txt".format(self.id),"w")
+        file = open("results/scrape_complete_{}.txt".format(self.id), "w")
         file.write("DONE!")
         file.close()
 
@@ -36,12 +36,13 @@ class ScrapeEventDetailsTask(luigi.Task):
 
 class ExtractFilesTask(luigi.Task):
     id = luigi.Parameter(default=0)
+    url = luigi.Parameter()
     scraped_path = "results/scraped/"
     extracted_path = "results/extracted/"
 
     def requires(self):
         return [
-            ScrapeEventDetailsTask()
+            ScrapeEventDetailsTask(self.id, self.url)
         ]
 
     def run(self):
@@ -49,12 +50,12 @@ class ExtractFilesTask(luigi.Task):
             if filename.endswith('.csv.gz'):
                 file = gzip.open(os.path.join(self.scraped_path,filename))
                 file_contents = file.read()
-                extracted_file = open(os.path.join(self.extracted_path,filename[:-3]),"wb")
+                extracted_file = open(os.path.join(self.extracted_path,filename[:-3]), "wb")
                 extracted_file.write(file_contents)
                 extracted_file.close()
                 file.close()
 
-        done_file = open("results/extract_complete_{}.txt".format(self.id),"w")
+        done_file = open("results/extract_complete_{}.txt".format(self.id), "w")
         done_file.write("DONE!")
         done_file.close()
 
@@ -64,14 +65,16 @@ class ExtractFilesTask(luigi.Task):
 
 class CreateCombinedDetailsTask(luigi.Task):
     id = luigi.Parameter(default=0)
+    url = luigi.Parameter()
     extracted_path = "results/extracted/"
-    combined_path = "results/combined_{}.csv".format(id)
+    combined_path = "results/combined.csv"
 
     def run(self):
+
         for filename in os.listdir(self.extracted_path):
-            print (filename)
+
             if filename.endswith('.csv'):
-                extracted_file = open(os.path.join(self.extracted_path,filename),"r")
+                extracted_file = open(os.path.join(self.extracted_path,filename), "r")
                 combined_file = open("results/combined_{}.csv".format(self.id), "a+")
 
                 if os.path.getsize("results/combined_{}.csv".format(self.id)) > 0:
@@ -80,12 +83,11 @@ class CreateCombinedDetailsTask(luigi.Task):
 
                 extracted_file_contents = extracted_file.read()
                 combined_file.write(extracted_file_contents)
-                return
-
+                # return
 
     def requires(self):
         return [
-            ExtractFilesTask()
+            ExtractFilesTask(self.id, self.url)
         ]
 
     def output(self):
@@ -94,13 +96,15 @@ class CreateCombinedDetailsTask(luigi.Task):
 
 class NOAATask(luigi.Task):
     id = luigi.Parameter(default=0)
+    url = luigi.Parameter()
 
     def run(self):
+        # maybe do some fun stuff here
         return
 
     def requires(self):
         return [
-            CreateCombinedDetailsTask()
+            CreateCombinedDetailsTask(self.id, self.url)
         ]
 
     def output(self):
@@ -108,4 +112,8 @@ class NOAATask(luigi.Task):
 
 
 if __name__ == '__main__':
-    luigi.run(["--local-scheduler"], main_task_cls=NOAATask)
+    luigi.run(
+        ["--local-scheduler",
+         "--url=https://www1.ncdc.noaa.gov/pub/data/swdi/stormevents/csvfiles/"],
+        main_task_cls=NOAATask,
+  )

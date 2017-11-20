@@ -1,4 +1,6 @@
 .idea/
 extract_complete*
 scrape_complete*
-combined.csv
+combined*
+.ipynb_checkpoints/
+.DS_Store
